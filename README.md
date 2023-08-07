@@ -10,6 +10,7 @@ It is simple, but powerfull:
 2) Any event property can be extended naturaly to multicast;
 3) Anonymous listeners are supported;
 4) The multicast container is managed by the library itself;
+5) Events assigned in the dfm of a form will be called first;
 
 Sample1:
 
@@ -25,6 +26,9 @@ uses
 ```
 TForm1 = class(TForm)
 end;
+
+var
+  Form1 := TForm1.Create(nil);
 ```
 
 > Create a listener class and start listening to events.
@@ -35,5 +39,18 @@ public
   procedure OnShow(Sender: TObject);
 end;
 
+LListener := TListener.Create();
+Form1.AddListener<TNotifyEvent>('OnShow', LListener.OnShow);
+```
+
+> Or else, listen with an anonymous listeners
 
 ```
+Form1.AddListener<TNotifyEvent>('OnShow',
+  procedure(const ASelf: TObject; const AArgs: TArray<TValue>)
+  begin
+    //Notified by Form1 OnShow event
+  end);
+```
+
+#### Now yor have listeners for multicasted events!
