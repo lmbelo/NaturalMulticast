@@ -13,6 +13,7 @@ It is simple, but powerfull:
 5) Events assigned in the dfm of a form will be called first;
 
 
+
 > First thing is to add the Natural.Multicast unit to the uses section of your unit.
 
 ```
