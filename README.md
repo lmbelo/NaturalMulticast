@@ -1,10 +1,12 @@
 # Natural Multicast Events
 
-Hi, Delphi community :)
+Natura Multicast Events have been done to be... natural!
 
-LMBelo here. I'd like to share my Delphi multicast events implementation. 
-It was made withou generics.
+It is still Beta, but you can full-feature it.
 
-* See sample projects
+It is simple, but powerfull:
 
-See you.
+1) Naturally add listeners to any event, even already signed events;
+2) Any event property can be extended naturaly to multicast;
+3) Anonymous listeners are supported;
+4) The multicast container is managed by the library itself;
