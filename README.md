@@ -1,4 +1,4 @@
-# MultiCastEvents4Delphi
+# Natural Multicast Events
 
 Hi, Delphi community :)
 
