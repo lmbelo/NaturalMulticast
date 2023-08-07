@@ -12,7 +12,6 @@ It is simple, but powerfull:
 4) The multicast container is managed by the library itself;
 5) Events assigned in the dfm of a form will be called first;
 
-Sample1:
 
 > First thing is to add the Natural.Multicast unit to the uses section of your unit.
 
