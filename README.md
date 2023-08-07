@@ -2,7 +2,7 @@
 
 Natural Multicast Events have been done to be... natural!
 
-It is still Beta, but you can full-feature it.
+It is still Beta, but you can full-feel its power.
 
 It is simple, but powerfull:
 
