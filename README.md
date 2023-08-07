@@ -56,7 +56,7 @@ LListener := TListener.Create();
 Form1.AddListener<TNotifyEvent>('OnShow', LListener.OnShow);
 ```
 
-> Or else, listen with an anonymous listeners
+> Or else, listen with an anonymous listener
 
 ```
 Form1.AddListener<TNotifyEvent>('OnShow',
