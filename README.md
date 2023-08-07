@@ -31,6 +31,19 @@ var
   Form1 := TForm1.Create(nil);
 ```
 
+> You can assign a local event method or not.
+
+```
+TForm1 = class(TForm)
+  procedure FormShow(Sender: TObject);
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+begin
+  //I'm the local event that will be called first!
+end;
+```
+
 > Create a listener class and start listening to events.
 
 ```
@@ -53,4 +66,4 @@ Form1.AddListener<TNotifyEvent>('OnShow',
   end);
 ```
 
-#### Now yor have listeners for multicasted events!
+#### That is all you need! Very natural...
