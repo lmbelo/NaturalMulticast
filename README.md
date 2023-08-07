@@ -1,6 +1,6 @@
 # Natural Multicast Events
 
-Natura Multicast Events have been done to be... natural!
+Natural Multicast Events have been done to be... natural!
 
 It is still Beta, but you can full-feature it.
 
