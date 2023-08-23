@@ -10,12 +10,14 @@ type
   TForm1 = class(TForm)
     Button1: TButton;
     Memo1: TMemo;
+    btnInvalidAddListener: TButton;
     procedure FormActivate(Sender: TObject);
     procedure FormClick(Sender: TObject);
     procedure FormDblClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure btnInvalidAddListenerClick(Sender: TObject);
   private
     FListenerCount: integer;
     procedure DoAddListener();
@@ -41,6 +43,11 @@ uses
   Natural.MultiCast;
 
 {$R *.dfm}
+
+procedure TForm1.btnInvalidAddListenerClick(Sender: TObject);
+begin
+  AddListener<TNotifyEvent>('OnInvalid', nil);
+end;
 
 procedure TForm1.DoAddListener;
 begin

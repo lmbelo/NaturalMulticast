@@ -32,5 +32,15 @@ object Form1: TForm1
     Height = 593
     Align = alTop
     TabOrder = 1
+    ExplicitWidth = 1106
+  end
+  object btnInvalidAddListener: TButton
+    Left = 143
+    Top = 616
+    Width = 129
+    Height = 25
+    Caption = 'Add Invalid Listener'
+    TabOrder = 2
+    OnClick = btnInvalidAddListenerClick
   end
 end
