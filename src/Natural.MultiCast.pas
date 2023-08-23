@@ -11,32 +11,50 @@ uses
   Natural.EventImplementation;
 
 type
-  TEventMultiCast = class
-  private
+  TEventMultiCast = class abstract
+  strict private
     FInstance: TObject;
     FTypeInfo: PTypeInfo;
     FInvoke: TMethodImplementationCallback;
     FImpl: TEventImplementation;
     function GetValue: TValue;
+  protected
+    function CreateImplementation(): TEventImplementation; virtual;
   public
     constructor Create(const AInstance: TObject; const ATypeInfo: PTypeInfo;
       const AInvoke: TMethodImplementationCallback);
     destructor Destroy(); override;
 
     function AsEvent<T>(): T;
+
+    property Instance: TObject read FInstance;
     property Value: TValue read GetValue;
   end;
 
-  TPropertyMultiCast = class(TEventMultiCast)
+  TPropertyMultiCast = class abstract(TEventMultiCast)
   strict private
-    FProperty: string;
-    FInvoke: TMethodImplementationCallback;
-    FEvt: TMethod;
+    FName: string;
     FAssigned: boolean;
   public
-    constructor Create(const AInstance: TObject; const AProperty: string;
+    constructor Create(const AInstance: TObject; const AName: string;
       const AInvoke: TMethodImplementationCallback);
-    procedure Assign();
+
+    function CanAssign(): boolean;
+    procedure Assign(); virtual;
+
+    property Name: string read FName;
+  end;
+
+  //This will save the current event assignment and call it first when triggered.
+  TRestorablePropertyMultiCast = class(TPropertyMultiCast)
+  strict private
+    FInvoke: TMethodImplementationCallback;
+    FEvt: TMethod;
+  public
+    constructor Create(const AInstance: TObject; const AName: string;
+      const AInvoke: TMethodImplementationCallback);
+
+    procedure Assign(); override;
   end;
 
   TAnonymousListener = reference to procedure(const ASelf: TObject; const AArgs: TArray<TValue>);
@@ -119,10 +137,13 @@ type
     property MultiCast: boolean read GetMultiCast write SetMultiCast;
   end;
 
-  EMultiCastEnabled = class(Exception)  
+  EUnknownProperty = class(Exception)
   end;
 
-  EMultiCastDisabled = class(Exception)   
+  EMultiCastEnabled = class(Exception)
+  end;
+
+  EMultiCastDisabled = class(Exception)
   end;
 
 implementation
@@ -136,7 +157,7 @@ begin
   FInstance := AInstance;
   FTypeInfo := ATypeInfo;
   FInvoke := AInvoke;
-  FImpl := TEventImplementation.Create(ATypeInfo, AInstance, AInvoke);
+  FImpl := CreateImplementation();
 end;
 
 destructor TEventMultiCast.Destroy;
@@ -147,10 +168,16 @@ end;
 
 function TEventMultiCast.GetValue: TValue;
 begin
+  Assert(Assigned(FImpl), 'Field "FImpl" not assigned.');
   TValue.Make(nil, FTypeInfo, Result);
   Assert(Result.DataSize = SizeOf(Pointer) * 2, 'Invalid generic type for "T".');
   PMethod(Result.GetReferenceToRawData)^.Code := FImpl.CodeAddress;
   PMethod(Result.GetReferenceToRawData)^.Data := FInstance;
+end;
+
+function TEventMultiCast.CreateImplementation: TEventImplementation;
+begin
+  Result := TEventImplementation.Create(FTypeInfo, FInstance, FInvoke);
 end;
 
 function TEventMultiCast.AsEvent<T>: T;
@@ -161,24 +188,55 @@ end;
 { TPropertyMultiCast }
 
 constructor TPropertyMultiCast.Create(const AInstance: TObject;
-  const AProperty: string; const AInvoke: TMethodImplementationCallback);
+  const AName: string; const AInvoke: TMethodImplementationCallback);
 var
   LRttiCtx: TRttiContext;
 begin
-  FProperty := AProperty;
+  FName := AName;
+  var LRttiType := LRttiCtx.GetType(PTypeInfo(AInstance.ClassInfo));
+  var LRttiProp := LRttiType.GetProperty(AName);
+
+  if not Assigned(LRttiProp) then
+    raise EUnknownProperty.CreateFmt('Property "%s" not found.', [AName]);
+
+  inherited Create(AInstance, LRttiProp.PropertyType.Handle, AInvoke);
+end;
+
+function TPropertyMultiCast.CanAssign: boolean;
+begin
+  Result := not FAssigned;
+end;
+
+procedure TPropertyMultiCast.Assign;
+var
+  LRttiCtx: TRttiContext;
+begin
+  if not CanAssign() then
+    Exit;
+
+  var LRttiType := LRttiCtx.GetType(PTypeInfo(Instance.ClassInfo));
+  var LRttiProp := LRttiType.GetProperty(FName);
+
+  LRttiProp.SetValue(Instance, Value);
+
+  FAssigned := true;
+end;
+
+{ TRestorablePropertyMultiCast }
+
+constructor TRestorablePropertyMultiCast.Create(const AInstance: TObject;
+  const AName: string; const AInvoke: TMethodImplementationCallback);
+begin
   FInvoke := AInvoke;
 
-  var LRttiType := LRttiCtx.GetType(PTypeInfo(AInstance.ClassInfo));
-  var LRttiProp := LRttiType.GetProperty(AProperty);
-
-  inherited Create(AInstance, LRttiProp.PropertyType.Handle,
+  inherited Create(AInstance, AName,
     procedure(UserData: Pointer; const Args: TArray<TValue>; out Result: TValue)
     begin
       if Assigned(FEvt.Code) and Assigned(FEvt.Data) then begin
         var LRttiCtx := TRttiContext.Create();
         try
           var LRttiType := LRttiCtx.GetType(PTypeInfo(AInstance.ClassInfo));
-          var LRttiProp := LRttiType.GetProperty(FProperty);
+          var LRttiProp := LRttiType.GetProperty(Name);
           var LRttiMethodType := LRttiCtx.GetType(LRttiProp.PropertyType.Handle) as TRttiMethodType;
 
           var LValue := TValue.Empty;
@@ -198,25 +256,23 @@ begin
     end);
 end;
 
-procedure TPropertyMultiCast.Assign;
+procedure TRestorablePropertyMultiCast.Assign;
 var
   LRttiCtx: TRttiContext;
 begin
-  if FAssigned then
+  if not CanAssign() then
     Exit;
 
-  var LRttiType := LRttiCtx.GetType(PTypeInfo(FInstance.ClassInfo));
-  var LRttiProp := LRttiType.GetProperty(FProperty);
+  var LRttiType := LRttiCtx.GetType(PTypeInfo(Instance.ClassInfo));
+  var LRttiProp := LRttiType.GetProperty(Name);
 
-  var LMethod := LRttiProp.GetValue(FInstance);
+  var LMethod := LRttiProp.GetValue(Instance);
   if not LMethod.IsEmpty then begin
     FEvt.Code := PMethod(LMethod.GetReferenceToRawData())^.Code;
     FEvt.Data := PMethod(LMethod.GetReferenceToRawData())^.Data;
   end;
 
-  LRttiProp.SetValue(FInstance, Value);
-
-  FAssigned := true;
+  inherited;
 end;
 
 { TInstanceMultiCast }
@@ -243,7 +299,7 @@ begin
   if FImpls.ContainsKey(AProperty) then
     Exit;
 
-  var LMultiCastProp := TPropertyMultiCast.Create(FInstance, AProperty,
+  var LMultiCastProp := TRestorablePropertyMultiCast.Create(FInstance, AProperty,
     procedure(UserData: Pointer; const Args: TArray<TValue>; out Result: TValue)
     var
       LRttiCtx: TRttiContext;

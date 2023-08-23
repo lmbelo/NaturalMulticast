@@ -119,7 +119,10 @@ begin
     FInvokeInfo.AddParameter(
       LParam.ParamType.Handle,
       ([pfVar, pfOut] * LParam.Flags <> []),
-      (pfConst in LParam.Flags) or (LParam.ParamType.Handle^.Kind in [tkRecord, tkMRecord, tkString]) and ([pfVar, pfOut] * LParam.Flags = []),
+      (pfConst in LParam.Flags)
+        or
+      (LParam.ParamType.Handle^.Kind in [tkRecord, tkMRecord, tkString])
+        and ([pfVar, pfOut] * LParam.Flags = []),
       [pfOut, pfResult] * LParam.Flags <> [],
       False);
 
